@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    # Comando para iniciar el servidor
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+      # Mapeamos static y media de una vez para evitar advertencias
+      - ./static:/static
+      - ./media:/media
+    ports:
+      - "8000:8000"

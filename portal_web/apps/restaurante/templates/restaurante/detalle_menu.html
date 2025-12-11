@@ -1,0 +1,34 @@
+{% extends 'restaurante/base.html' %}
+
+{% block content %}
+    <a href="{% url 'lista_menus' %}">← Volver a la lista</a>
+    
+    <h1>Menú: {{ menu.nombre }}</h1>
+    
+    <div style="background: #e9ecef; padding: 15px; border-radius: 5px; margin-top: 20px;">
+        <h3 style="margin-top:0;">Platos Disponibles</h3>
+        
+        <a href="{% url 'agregar_plato' menu.id %}" class="btn">+ Agregar Plato</a>
+
+        <ul>
+            {% for plato in platos %}
+                <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #ccc;">
+                    
+                    <strong style="font-size: 1.1em;">{{ plato.nombre }}</strong> 
+                    <span style="float: right; font-weight: bold; color: #28a745;">${{ plato.precio }}</span>
+                    <br>
+                    <small style="color: #666;">{{ plato.descripcion }}</small>
+                    
+                    <div style="margin-top: 5px; text-align: right;">
+                        <a href="{% url 'editar_plato' plato.id %}" style="color: #ffc107; font-size: 0.9em; text-decoration: underline; margin-right: 10px;">Editar</a>
+                        
+                        <a href="{% url 'eliminar_plato' plato.id %}" style="color: #dc3545; font-size: 0.9em; text-decoration: underline;">Eliminar</a>
+                    </div>
+
+                </li>
+            {% empty %}
+            <p>Este menú está vacío. ¡Agrega algunos platos deliciosos!</p>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

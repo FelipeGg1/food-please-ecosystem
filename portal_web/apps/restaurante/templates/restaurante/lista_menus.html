@@ -1,0 +1,35 @@
+{% extends 'restaurante/base.html' %}
+
+{% block content %}
+    <h1>Mis Menús</h1>
+    <a href="{% url 'crear_menu' %}" class="btn">+ Crear Nuevo Menú</a>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre del Menú</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for menu in menus %}
+            <tr>
+                <td><strong>{{ menu.nombre }}</strong></td>
+                <td>{% if menu.activo %}🟢 Activo{% else %}🔴 Inactivo{% endif %}</td>
+                <td>
+                    <a href="{% url 'detalle_menu' menu.id %}" class="btn btn-secondary">Ver Platos</a>
+                    
+                    <a href="{% url 'eliminar_menu' menu.id %}" class="btn" style="background-color: #dc3545;">Eliminar</a>
+                    
+                    <a href="{% url 'editar_menu' menu.id %}" class="btn" style="background-color: #ffc107; color: black;">Editar</a>
+                    
+                    
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3">No tienes menús creados. ¡Crea el primero!</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'restaurante/base.html' %}
+
+{% block content %}
+    <h1>{{ titulo }}</h1>
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn">Guardar</button>
+    </form>
+    <a href="javascript:history.back()" style="margin-left: 10px;">Cancelar</a>
+{% endblock %}

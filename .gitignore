@@ -1,0 +1,26 @@
+# ==========================
+# IGNORAR DE DJANGO (Portal)
+# ==========================
+portal_web/**/__pycache__/
+portal_web/**/*.py[cod]
+portal_web/**/*.sqlite3
+portal_web/**/venv/
+portal_web/**/.env
+portal_web/**/media/   # Opcional: Si no quieres subir fotos de prueba
+
+# ==========================
+# IGNORAR DE FLUTTER (Movil)
+# ==========================
+app_movil/**/.dart_tool/
+app_movil/**/.packages
+app_movil/**/.pub/
+app_movil/**/build/
+app_movil/**/.flutter-plugins
+app_movil/**/.flutter-plugins-dependencies
+
+# ==========================
+# SISTEMA
+# ==========================
+.vscode/
+.idea/
+.DS_Store
