@@ -1,6 +1,7 @@
 {% extends 'restaurante/base.html' %}
 
 {% block content %}
+    <a href="{% url 'home' %}">Volver al Home</a>
     <h1>Mis Menús</h1>
     <a href="{% url 'crear_menu' %}" class="btn">+ Crear Nuevo Menú</a>
     

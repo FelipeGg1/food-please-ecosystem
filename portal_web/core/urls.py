@@ -26,6 +26,7 @@ router.register(r'pedidos', PedidoViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('restaurante.urls')), # web vieja
-    path('api/', include(router.urls)),    # API nueva para Flutter
+    path('', include('restaurante.urls')), # web Principal
+    path('api/', include(router.urls)),    # API para Flutter
+    path('usuarios/', include('usuarios.urls')), # Login principal
 ]

@@ -1,9 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Menu, Plato, Pedido
-from .forms import MenuForm, PlatoForm
+# AGREGADO: Importamos el formulario de cancelación
+from .forms import MenuForm, PlatoForm, CancelarPedidoForm 
 from rest_framework import viewsets
 from .serializers import MenuSerializer, PlatoSerializer, PedidoSerializer
+from django.contrib.auth.decorators import login_required
 
+# ==========================================
+# GESTIÓN DE MENÚS Y PLATOS (TU CÓDIGO)
+# ==========================================
 
 # 1. Listar todos los menús (Inicio)
 def lista_menus(request):
@@ -16,7 +21,6 @@ def crear_menu(request):
         form = MenuForm(request.POST)
         if form.is_valid():
             menu = form.save()
-            # Al guardar, vamos directo al detalle para empezar a agregar platos
             return redirect('detalle_menu', id=menu.id)
     else:
         form = MenuForm()
@@ -26,7 +30,7 @@ def crear_menu(request):
         'titulo': 'Crear Nuevo Menú'
     })
 
-#3. Eliminar menú
+# 3. Eliminar menú
 def eliminar_menu(request, id):
     menu = get_object_or_404(Menu, id=id)
 
@@ -34,14 +38,12 @@ def eliminar_menu(request, id):
         menu.delete()
         return redirect('lista_menus')
 
-    # Si es GET, mostramos la página de confirmación
     return render(request, 'restaurante/confirmar_borrado.html', {'item': menu.nombre})
 
 
 # 4. Ver detalle del Menú y sus Platos
 def detalle_menu(request, id):
     menu = get_object_or_404(Menu, id=id)
-    # Gracias al 'related_name' del modelo, podemos acceder a los platos así:
     platos = menu.platos.all()
     return render(request, 'restaurante/detalle_menu.html', {'menu': menu, 'platos': platos})
 
@@ -52,11 +54,8 @@ def agregar_plato(request, menu_id):
     if request.method == 'POST':
         form = PlatoForm(request.POST)
         if form.is_valid():
-            # Guardamos el plato en memoria pero SIN subirlo a la BD aún
             plato = form.save(commit=False)
-            # Le asignamos el menú padre manualmente
             plato.menu = menu_padre
-            #lo guardamos en la BD
             plato.save()
             return redirect('detalle_menu', id=menu_id)
     else:
@@ -71,16 +70,12 @@ def agregar_plato(request, menu_id):
 # 6. Vista para eliminar un Plato
 def eliminar_plato(request, id):
     plato = get_object_or_404(Plato, id=id)
-    
-    # Guardamos el ID del menú antes de borrar el plato para poder volver ahí
     menu_id = plato.menu.id 
     
     if request.method == 'POST':
         plato.delete()
-        # Redirigimos de vuelta al detalle del menú padre
         return redirect('detalle_menu', id=menu_id)
     
-    # Usamos la misma plantilla de confirmación, es reutilizable
     return render(request, 'restaurante/confirmar_borrado.html', {'item': plato.nombre})
 
 # 7. Editar un Menú
@@ -88,13 +83,11 @@ def editar_menu(request, id):
     menu = get_object_or_404(Menu, id=id)
     
     if request.method == 'POST':
-        # Pasamos 'instance=menu' para decirle que actualice ESTE menú, no cree uno nuevo
         form = MenuForm(request.POST, instance=menu)
         if form.is_valid():
             form.save()
             return redirect('lista_menus')
     else:
-        # Cargamos el formulario con los datos actuales del menú
         form = MenuForm(instance=menu)
 
     return render(request, 'restaurante/form_generico.html', {
@@ -105,7 +98,7 @@ def editar_menu(request, id):
 # 8. Editar un Plato
 def editar_plato(request, id):
     plato = get_object_or_404(Plato, id=id)
-    menu_id = plato.menu.id # Guardamos el ID para volver al menú correcto
+    menu_id = plato.menu.id 
     
     if request.method == 'POST':
         form = PlatoForm(request.POST, instance=plato)
@@ -121,6 +114,77 @@ def editar_plato(request, id):
     })
 
 
+# ==========================================
+# GESTIÓN DE PEDIDOS (LO NUEVO QUE FALTABA)
+# ==========================================
+
+@login_required
+def lista_pedidos(request):
+    # Listar pedidos del más reciente al más antiguo
+    pedidos = Pedido.objects.all().order_by('-fecha')
+    return render(request, 'restaurante/lista_pedidos.html', {'pedidos': pedidos})
+
+@login_required
+def finalizar_pedido(request, pedido_id):
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+    
+    if request.method == 'POST':
+        pedido.estado = Pedido.FINALIZADO
+        pedido.save()
+        return redirect('lista_pedidos')
+    
+    # Si intentan entrar por GET, los devolvemos a la lista
+    return redirect('lista_pedidos')
+
+@login_required
+def cancelar_pedido(request, pedido_id):
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+    
+    if request.method == 'POST':
+        form = CancelarPedidoForm(request.POST, instance=pedido)
+        if form.is_valid():
+            # Al guardar el form, se actualiza el motivo_cancelacion en el objeto
+            pedido.estado = Pedido.CANCELADO
+            pedido.save() 
+            return redirect('lista_pedidos')
+    else:
+        form = CancelarPedidoForm(instance=pedido)
+
+    return render(request, 'restaurante/cancelar_pedido.html', {'form': form, 'pedido': pedido})
+
+@login_required
+def tomar_pedido(request, pedido_id):
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+    
+    # Solo permitimos tomarlo si está Pendiente y no tiene dueño
+    if pedido.estado == Pedido.PENDIENTE and not pedido.repartidor:
+        pedido.repartidor = request.user # Asignamos al usuario actual (Repartidor)
+        pedido.estado = Pedido.EN_CAMINO # Cambiamos estado
+        pedido.save()
+    
+    return redirect('lista_pedidos')
+
+@login_required
+def home(request):
+    if request.user.is_superuser:
+        # CORREGIDO: Usamos 'fecha'
+        pedidos = Pedido.objects.all().order_by('-fecha')
+        titulo = "Panel de Administrador"
+    else:
+        # CORREGIDO: Usamos 'fecha'
+        pedidos = Pedido.objects.filter(repartidor=request.user, estado='FINALIZADO').order_by('-fecha')
+        titulo = f"Entregas de {request.user.username}"
+
+    context = {
+        'pedidos': pedidos,
+        'titulo': titulo
+    }
+    return render(request, 'restaurante/home.html', context)
+
+# ==========================================
+# API VIEWSETS
+# ==========================================
+
 class MenuViewSet(viewsets.ModelViewSet):
     queryset = Menu.objects.all()
     serializer_class = MenuSerializer
@@ -128,7 +192,6 @@ class MenuViewSet(viewsets.ModelViewSet):
 class PlatoViewSet(viewsets.ModelViewSet):
     queryset = Plato.objects.all()
     serializer_class = PlatoSerializer
-
 
 class PedidoViewSet(viewsets.ModelViewSet):
     queryset = Pedido.objects.all()

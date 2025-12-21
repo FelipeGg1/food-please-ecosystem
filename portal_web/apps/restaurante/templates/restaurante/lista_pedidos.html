@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Pedidos</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background-color: #ff5722; color: white; }
+        .btn { padding: 5px 10px; text-decoration: none; border-radius: 4px; color: white; font-size: 0.9rem; border: none; cursor: pointer;}
+        .btn-success { background-color: #4caf50; } /* Verde */
+        .btn-danger { background-color: #f44336; } /* Rojo */
+        .estado-pendiente { color: #ff9800; font-weight: bold; }
+        .estado-finalizado { color: #4caf50; font-weight: bold; }
+        .estado-cancelado { color: #f44336; font-weight: bold; }
+        .nav-link { margin-bottom: 20px; display: inline-block; }
+    </style>
+</head>
+<body>
+    <h2>Gestión de Pedidos</h2>
+    <a href="{% url 'home' %}">Volver al Home</a>
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Repartidor</th> <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pedido in pedidos %}
+            <tr>
+                <td>{{ pedido.id }}</td>
+                <td>{{ pedido.cliente.email }}</td>
+                <td>{{ pedido.fecha|date:"H:i" }}</td>
+                
+                <td>
+                    <span class="
+                        {% if pedido.estado == 'PENDIENTE' %}estado-pendiente{% endif %}
+                        {% if pedido.estado == 'EN_CAMINO' %}estado-encamino{% endif %}
+                        {% if pedido.estado == 'FINALIZADO' %}estado-finalizado{% endif %}
+                        {% if pedido.estado == 'CANCELADO' %}estado-cancelado{% endif %}
+                    ">
+                        {{ pedido.get_estado_display }}
+                    </span>
+                </td>
+                
+                <td>
+                    {% if pedido.repartidor %}
+                        {{ pedido.repartidor.first_name|default:pedido.repartidor.email }}
+                    {% else %}
+                        <span style="color:#ccc;">-- Sin asignar --</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if pedido.estado == 'PENDIENTE' %}
+                        
+                        <form action="{% url 'tomar_pedido' pedido.id %}" method="post" style="display:inline;">
+                             {% csrf_token %}
+                             <button type="submit" class="btn" style="background-color: #2196F3;">Tomar Envío</button>
+                        </form>
+
+                        <a href="{% url 'cancelar_pedido' pedido.id %}" class="btn btn-danger" style="font-size:0.8rem;">Cancelar X</a>
+
+                    {% elif pedido.estado == 'EN_CAMINO' %}
+                        
+                        <form action="{% url 'finalizar_pedido' pedido.id %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">Confirmar Entrega</button>
+                        </form>
+
+                    {% else %}
+                        <span style="color: grey;">Historial</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;">No hay pedidos.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

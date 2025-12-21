@@ -3,7 +3,8 @@ from . import views
 
 urlpatterns = [
     # Ruta vacía = Lista de Menús (Home)
-    path('', views.lista_menus, name='lista_menus'),
+    path('menus/', views.lista_menus, name='lista_menus'),
+    path('', views.home, name='home'),
     
     # Crear un menú nuevo
     path('menu/nuevo/', views.crear_menu, name='crear_menu'),
@@ -25,4 +26,9 @@ urlpatterns = [
     
     # Ruta para editar plato
     path('plato/editar/<int:id>/', views.editar_plato, name='editar_plato'),
+    
+    path('pedidos/', views.lista_pedidos, name='lista_pedidos'),
+    path('pedidos/finalizar/<int:pedido_id>/', views.finalizar_pedido, name='finalizar_pedido'),
+    path('pedidos/cancelar/<int:pedido_id>/', views.cancelar_pedido, name='cancelar_pedido'),
+    path('pedidos/tomar/<int:pedido_id>/', views.tomar_pedido, name='tomar_pedido'),
 ]
