@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../utils/carrito.dart';
+import '../services/auth_service.dart'; // Importante para obtener el token
 
 class ResumenPedidoScreen extends StatefulWidget {
   const ResumenPedidoScreen({super.key});
@@ -15,43 +16,84 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
 
   Future<void> confirmarPedido() async {
     setState(() => isSending = true);
+
+    // 1. Obtener el token de seguridad
+    final authService = AuthService();
+    final token = await authService.getToken();
+
+    if (token == null) {
+      setState(() => isSending = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error: No se encontró sesión activa"), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/');
     
     List<int> idsPlatos = Carrito.productos.map((e) => e['id'] as int).toList();
+    
+    // 2. Body limpio (Sin enviar 'cliente' manualmente)
     final body = jsonEncode({
       "platos": idsPlatos,
       "total": Carrito.obtenerTotal(),
-      "cliente": "Cliente Móvil"
+      // "cliente": "Cliente Móvil" <-- Eliminado para evitar error 400
     });
 
     try {
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
-        body: body,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Token $token" // 3. Enviamos la credencial
+        },
+        body: jsonEncode({
+          "platos": idsPlatos,
+          "total": Carrito.obtenerTotal(),
+        }),
       );
+
+      // Diagnóstico en consola
+      print("Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
 
       if (response.statusCode == 201) {
         Carrito.limpiar(); 
         if (!mounted) return;
+        
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text("¡Éxito!"),
-            content: const Text("Pedido guardado en historial."),
+            content: const Text("Pedido enviado correctamente."),
             actions: [
-              TextButton(onPressed: () { Navigator.of(ctx).pop(); Navigator.of(context).pop(); }, child: const Text("Genial"))
+              TextButton(
+                onPressed: () { 
+                  Navigator.of(ctx).pop(); // Cierra Dialog
+                  Navigator.of(context).pop(); // Cierra Pantalla Resumen
+                }, 
+                child: const Text("Genial")
+              )
             ],
           ),
         );
       } else {
-        throw Exception('Error ${response.statusCode}');
+        // Mostrar error real del servidor en la pantalla
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error del servidor: ${response.body}"), backgroundColor: Colors.red)
+        );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error de conexión: $e"), backgroundColor: Colors.red)
+      );
     } finally {
-      setState(() => isSending = false);
+      if (mounted) {
+        setState(() => isSending = false);
+      }
     }
   }
 
@@ -60,7 +102,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("Tu Carrito"), backgroundColor: Colors.deepOrange, foregroundColor: Colors.white),
       body: Carrito.productos.isEmpty
-          ? const Center(child: Text("Tu carrito está vacío ☹️", style: TextStyle(fontSize: 18)))
+          ? const Center(child: Text("Tu carrito está vacío", style: TextStyle(fontSize: 18)))
           : Column(
               children: [
                 Expanded(
@@ -98,7 +140,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                           onPressed: isSending ? null : confirmarPedido,
-                          child: isSending ? const CircularProgressIndicator(color: Colors.white) : const Text("CONFIRMAR PEDIDO", style: TextStyle(fontSize: 18)),
+                          child: isSending 
+                            ? const CircularProgressIndicator(color: Colors.white) 
+                            : const Text("CONFIRMAR PEDIDO", style: TextStyle(fontSize: 18)),
                         ),
                       )
                     ],

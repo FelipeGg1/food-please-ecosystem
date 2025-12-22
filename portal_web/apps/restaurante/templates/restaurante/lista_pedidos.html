@@ -1,88 +1,74 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Gestión de Pedidos</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
-        table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; }
-        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
-        th { background-color: #ff5722; color: white; }
-        .btn { padding: 5px 10px; text-decoration: none; border-radius: 4px; color: white; font-size: 0.9rem; border: none; cursor: pointer;}
-        .btn-success { background-color: #4caf50; } /* Verde */
-        .btn-danger { background-color: #f44336; } /* Rojo */
-        .estado-pendiente { color: #ff9800; font-weight: bold; }
-        .estado-finalizado { color: #4caf50; font-weight: bold; }
-        .estado-cancelado { color: #f44336; font-weight: bold; }
-        .nav-link { margin-bottom: 20px; display: inline-block; }
-    </style>
-</head>
-<body>
-    <h2>Gestión de Pedidos</h2>
-    <a href="{% url 'home' %}">Volver al Home</a>
+{% extends 'restaurante/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Gestión de Pedidos (Cocina)</h2>
+    
+    <div class="row">
+        {% for pedido in pedidos %}
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 shadow-sm 
+                    {% if pedido.estado == 'PENDIENTE' %}border-warning
+                    {% elif pedido.estado == 'COCINANDO' %}border-primary
+                    {% elif pedido.estado == 'LISTO' %}border-success
+                    {% else %}border-secondary{% endif %}">
+                    
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong>Pedido #{{ pedido.id }}</strong>
+                        <span class="badge 
+                            {% if pedido.estado == 'PENDIENTE' %}bg-warning text-dark
+                            {% elif pedido.estado == 'COCINANDO' %}bg-primary
+                            {% elif pedido.estado == 'LISTO' %}bg-success
+                            {% else %}bg-secondary{% endif %}">
+                            {{ pedido.get_estado_display }}
+                        </span>
+                    </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Cliente</th>
-                <th>Fecha</th>
-                <th>Estado</th>
-                <th>Repartidor</th> <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for pedido in pedidos %}
-            <tr>
-                <td>{{ pedido.id }}</td>
-                <td>{{ pedido.cliente.email }}</td>
-                <td>{{ pedido.fecha|date:"H:i" }}</td>
-                
-                <td>
-                    <span class="
-                        {% if pedido.estado == 'PENDIENTE' %}estado-pendiente{% endif %}
-                        {% if pedido.estado == 'EN_CAMINO' %}estado-encamino{% endif %}
-                        {% if pedido.estado == 'FINALIZADO' %}estado-finalizado{% endif %}
-                        {% if pedido.estado == 'CANCELADO' %}estado-cancelado{% endif %}
-                    ">
-                        {{ pedido.get_estado_display }}
-                    </span>
-                </td>
-                
-                <td>
-                    {% if pedido.repartidor %}
-                        {{ pedido.repartidor.first_name|default:pedido.repartidor.email }}
-                    {% else %}
-                        <span style="color:#ccc;">-- Sin asignar --</span>
-                    {% endif %}
-                </td>
-
-                <td>
-                    {% if pedido.estado == 'PENDIENTE' %}
+                    <div class="card-body">
+                        <p class="card-text mb-1"><strong>Cliente:</strong> {{ pedido.cliente.username }}</p>
+                        <p class="card-text mb-1"><strong>Items:</strong> {{ pedido.cantidad_items }} platos</p>
+                        <p class="card-text mb-3"><strong>Total:</strong> ${{ pedido.total_vivo }}</p>
                         
-                        <form action="{% url 'tomar_pedido' pedido.id %}" method="post" style="display:inline;">
-                             {% csrf_token %}
-                             <button type="submit" class="btn" style="background-color: #2196F3;">Tomar Envío</button>
-                        </form>
+                        <ul class="list-group list-group-flush mb-3 small">
+                            {% for plato in pedido.platos.all %}
+                                <li class="list-group-item px-0 py-1">{{ plato.nombre }}</li>
+                            {% endfor %}
+                        </ul>
 
-                        <a href="{% url 'cancelar_pedido' pedido.id %}" class="btn btn-danger" style="font-size:0.8rem;">Cancelar X</a>
+                        <div class="d-grid gap-2">
+                            
+                            {% if pedido.estado == 'PENDIENTE' %}
+                                <a href="{% url 'empezar_pedido' pedido.id %}" class="btn btn-primary">
+                                    <i class="bi bi-fire"></i> Empezar a Cocinar
+                                </a>
+                                <a href="{% url 'cancelar_pedido' pedido.id %}" class="btn btn-outline-danger btn-sm">
+                                    Cancelar
+                                </a>
 
-                    {% elif pedido.estado == 'EN_CAMINO' %}
-                        
-                        <form action="{% url 'finalizar_pedido' pedido.id %}" method="post" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-success">Confirmar Entrega</button>
-                        </form>
+                            {% elif pedido.estado == 'COCINANDO' %}
+                                <a href="{% url 'marcar_listo' pedido.id %}" class="btn btn-success">
+                                    <i class="bi bi-check-lg"></i> Comida Lista
+                                </a>
 
-                    {% else %}
-                        <span style="color: grey;">Historial</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="6" style="text-align:center;">No hay pedidos.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</body>
-</html>
+                            {% elif pedido.estado == 'LISTO' %}
+                                <div class="alert alert-success py-1 text-center mb-0">
+                                    <small>Esperando Repartidor...</small>
+                                </div>
+                            
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted small">
+                        {{ pedido.fecha|date:"H:i d/m/Y" }}
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    No hay pedidos activos en este momento.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

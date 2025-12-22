@@ -7,7 +7,9 @@ portal_web/**/*.sqlite3
 portal_web/**/venv/
 portal_web/**/.env
 portal_web/**/media/   # Opcional: Si no quieres subir fotos de prueba
-
+*.log
+*.pot
+*.pyc
 # ==========================
 # IGNORAR DE FLUTTER (Movil)
 # ==========================
@@ -17,6 +19,15 @@ app_movil/**/.pub/
 app_movil/**/build/
 app_movil/**/.flutter-plugins
 app_movil/**/.flutter-plugins-dependencies
+app_movil/android/.gradle
+app_movil/android/local.properties
+app_movil/android/**/*.iml
+
+# iOS
+app_movil/ios/.symlinks/
+app_movil/ios/Pods/
+app_movil/ios/Flutter/Flutter.framework
+app_movil/ios/Flutter/App.framework
 
 # ==========================
 # SISTEMA

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../utils/carrito.dart';
 import '../widgets/app_drawer.dart';
+import '../services/auth_service.dart';
 import 'platos_screen.dart';
 import 'resumen_screen.dart';
 
@@ -14,15 +15,22 @@ class MenuScreen extends StatefulWidget {
 }
 
 class _MenuScreenState extends State<MenuScreen> {
+  String appTitle = "FoodPlease";
   List<dynamic> menus = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _setDynamicTitle();
     fetchMenus();
   }
-
+  void _setDynamicTitle() async {
+    final bool esRepartidor = await AuthService().esRepartidor();
+    setState(() {
+      appTitle = esRepartidor ? "FoodPlease Repartidores" : "FoodPlease Clientes";
+    });
+  }
   void refrescar() {
     setState(() {});
   }
@@ -47,7 +55,7 @@ class _MenuScreenState extends State<MenuScreen> {
     return Scaffold(
       drawer: const AppDrawer(), // <--- AQUÍ AGREGAMOS EL MENÚ LATERAL
       appBar: AppBar(
-        title: const Text('FoodPlease', style: TextStyle(color: Colors.white)),
+        title: Text(appTitle, style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.deepOrange,
         actions: [
           Stack(
@@ -124,3 +132,7 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 }
+
+
+// rep@rep.com
+// andres1234

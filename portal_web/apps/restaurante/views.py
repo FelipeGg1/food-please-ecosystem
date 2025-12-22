@@ -3,17 +3,29 @@ from .models import Menu, Plato, Pedido
 # AGREGADO: Importamos el formulario de cancelación
 from .forms import MenuForm, PlatoForm, CancelarPedidoForm 
 from rest_framework import viewsets
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from .serializers import MenuSerializer, PlatoSerializer, PedidoSerializer
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Sum
+from django.db.models.functions import Coalesce
 
 # ==========================================
-# GESTIÓN DE MENÚS Y PLATOS (TU CÓDIGO)
+# GESTIÓN DE MENÚS Y PLATOS
 # ==========================================
 
 # 1. Listar todos los menús (Inicio)
 def lista_menus(request):
-    menus = Menu.objects.all()
-    return render(request, 'restaurante/lista_menus.html', {'menus': menus})
+    menus = Menu.objects.annotate(
+        total_platos=Count('platos'), 
+        total_costo=Coalesce(Sum('platos__precio'), 0) 
+    ).order_by('-activo', 'nombre')
+    
+    return render(request, 'restaurante/lista_menus.html', {
+        'menus': menus
+    })
 
 # 2. Crear un Menú nuevo
 def crear_menu(request):
@@ -115,25 +127,53 @@ def editar_plato(request, id):
 
 
 # ==========================================
-# GESTIÓN DE PEDIDOS (LO NUEVO QUE FALTABA)
+# GESTIÓN DE PEDIDOS
 # ==========================================
 
 @login_required
 def lista_pedidos(request):
-    # Listar pedidos del más reciente al más antiguo
-    pedidos = Pedido.objects.all().order_by('-fecha')
-    return render(request, 'restaurante/lista_pedidos.html', {'pedidos': pedidos})
+    pedidos = Pedido.objects.annotate(
+        cantidad_items=Count('platos'),
+        total_vivo=Coalesce(Sum('platos__precio'), 0)
+    ).order_by('-fecha')
+
+    return render(request, 'restaurante/lista_pedidos.html', {
+        'pedidos': pedidos
+    })
+
+# --- NUEVAS FUNCIONES PARA EL FLUJO (ADMINISTRADOR) ---
+
+@login_required
+def empezar_pedido(request, pedido_id):
+    """Pasa de PENDIENTE a COCINANDO"""
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+    if pedido.estado == Pedido.PENDIENTE:
+        pedido.estado = Pedido.COCINANDO
+        pedido.save()
+    return redirect('lista_pedidos')
+
+@login_required
+def marcar_listo(request, pedido_id):
+    """Pasa de COCINANDO a LISTO (Aquí aparece en la App del Repartidor)"""
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+    if pedido.estado == Pedido.COCINANDO:
+        pedido.estado = Pedido.LISTO
+        pedido.save()
+    return redirect('lista_pedidos')
+
+# ----------------------------------------------------------
 
 @login_required
 def finalizar_pedido(request, pedido_id):
+    # Esta función es para finalización manual desde el panel admin
     pedido = get_object_or_404(Pedido, id=pedido_id)
     
     if request.method == 'POST':
-        pedido.estado = Pedido.FINALIZADO
+        # ACTUALIZADO: Usamos 'ENTREGADO' en lugar de FINALIZADO
+        pedido.estado = Pedido.ENTREGADO
         pedido.save()
         return redirect('lista_pedidos')
     
-    # Si intentan entrar por GET, los devolvemos a la lista
     return redirect('lista_pedidos')
 
 @login_required
@@ -143,7 +183,6 @@ def cancelar_pedido(request, pedido_id):
     if request.method == 'POST':
         form = CancelarPedidoForm(request.POST, instance=pedido)
         if form.is_valid():
-            # Al guardar el form, se actualiza el motivo_cancelacion en el objeto
             pedido.estado = Pedido.CANCELADO
             pedido.save() 
             return redirect('lista_pedidos')
@@ -154,12 +193,12 @@ def cancelar_pedido(request, pedido_id):
 
 @login_required
 def tomar_pedido(request, pedido_id):
+    # Lógica antigua de Admin, adaptada por si se usa manualmente
     pedido = get_object_or_404(Pedido, id=pedido_id)
     
-    # Solo permitimos tomarlo si está Pendiente y no tiene dueño
-    if pedido.estado == Pedido.PENDIENTE and not pedido.repartidor:
-        pedido.repartidor = request.user # Asignamos al usuario actual (Repartidor)
-        pedido.estado = Pedido.EN_CAMINO # Cambiamos estado
+    if not pedido.repartidor:
+        pedido.repartidor = request.user 
+        pedido.estado = Pedido.EN_CAMINO
         pedido.save()
     
     return redirect('lista_pedidos')
@@ -167,12 +206,11 @@ def tomar_pedido(request, pedido_id):
 @login_required
 def home(request):
     if request.user.is_superuser:
-        # CORREGIDO: Usamos 'fecha'
         pedidos = Pedido.objects.all().order_by('-fecha')
         titulo = "Panel de Administrador"
     else:
-        # CORREGIDO: Usamos 'fecha'
-        pedidos = Pedido.objects.filter(repartidor=request.user, estado='FINALIZADO').order_by('-fecha')
+        # ACTUALIZADO: Filtramos por ENTREGADO
+        pedidos = Pedido.objects.filter(repartidor=request.user, estado='ENTREGADO').order_by('-fecha')
         titulo = f"Entregas de {request.user.username}"
 
     context = {
@@ -196,3 +234,58 @@ class PlatoViewSet(viewsets.ModelViewSet):
 class PedidoViewSet(viewsets.ModelViewSet):
     queryset = Pedido.objects.all()
     serializer_class = PedidoSerializer
+    
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(cliente=self.request.user)
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff or getattr(user, 'rol', None) == 'REPARTIDOR':
+            return Pedido.objects.all()
+            
+        return Pedido.objects.filter(cliente=user)
+
+    @action(detail=False, methods=['get'])
+    def disponibles(self, request):
+        # ACTUALIZADO: El repartidor busca pedidos en estado LISTO
+        pedidos = Pedido.objects.filter(estado='LISTO', repartidor__isnull=True)
+        
+        serializer = self.get_serializer(pedidos, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def tomar(self, request, pk=None):
+        pedido = self.get_object()
+        
+        # ACTUALIZADO: Solo se toma si está LISTO
+        if pedido.repartidor is None and pedido.estado == 'LISTO':
+            pedido.repartidor = request.user
+            pedido.estado = 'EN_CAMINO'
+            pedido.save()
+            return Response({'status': 'Pedido asignado correctamente'})
+        else:
+            return Response(
+                {'error': 'El pedido no está listo para entrega'}, 
+                status=400
+            )
+
+    @action(detail=False, methods=['get'])
+    def mis_entregas(self, request):
+        pedidos = Pedido.objects.filter(repartidor=request.user, estado='EN_CAMINO')
+        serializer = self.get_serializer(pedidos, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def finalizar_entrega(self, request, pk=None):
+        pedido = self.get_object()
+        
+        if pedido.repartidor == request.user and pedido.estado == 'EN_CAMINO':
+            # ACTUALIZADO: Usamos 'ENTREGADO'
+            pedido.estado = 'ENTREGADO' 
+            pedido.save()
+            return Response({'status': 'Pedido entregado correctamente'})
+        else:
+            return Response({'error': 'No puedes finalizar este pedido'}, status=400)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // Importamos la pantalla inicial desde su carpeta
 import 'screens/menu_screen.dart'; 
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       // Aquí simplemente llamamos a la pantalla que moviste
-      home: const MenuScreen(),
+      home: LoginScreen(),
     );
   }
 }

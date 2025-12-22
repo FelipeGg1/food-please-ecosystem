@@ -19,6 +19,19 @@ class Plato(models.Model):
     
     def __str__(self):
         return f"{self.nombre} - ${self.precio}"
+def cantidad_platos(self):
+        # Usamos 'platos' porque el diagnóstico confirmó que ese es el nombre
+        return self.platos.count()
+
+def costo_total(self):
+    # Usamos 'platos' para sumar los precios
+    # El 'or 0' es para que si no hay platos, devuelva 0 en vez de error
+    return sum(plato.precio for plato in self.platos.all()) or 0
+
+# Esto es opcional, pero ayuda a que se vea bien en el Admin de Django
+cantidad_platos.short_description = "N° Platos"
+costo_total.short_description = "Costo Total"
+
 
 # 3. El Pedido (COMPLETO)
 class Pedido(models.Model):
@@ -27,16 +40,20 @@ class Pedido(models.Model):
     total = models.IntegerField(default=0)
     
     # --- LOS NUEVOS CAMPOS DE ESTADO ---
-    PENDIENTE = 'PENDIENTE'
-    EN_CAMINO = 'EN_CAMINO'
-    FINALIZADO = 'FINALIZADO'
+    PENDIENTE = 'PENDIENTE'           # Cliente pide
+    COCINANDO = 'COCINANDO'           # Restaurante acepta y cocina
+    LISTO = 'LISTO'                   # Comida empacada (Visible para Repartidor)
+    EN_CAMINO = 'EN_CAMINO'           # Repartidor recogió
+    ENTREGADO = 'ENTREGADO'           # Fin
     CANCELADO = 'CANCELADO'
-    
-    ESTADOS_CHOICES = [
-        (PENDIENTE, 'Pendiente'),
-        (FINALIZADO, 'Finalizado'),
-        (EN_CAMINO, 'En Camino (Repartidor asignado)'),
-        (CANCELADO, 'Cancelado (No Finalizado)'),
+
+    ESTADO_CHOICES = [
+        (PENDIENTE, 'Pendiente (Esperando confirmación)'),
+        (COCINANDO, 'En Preparación (Cocinando)'),
+        (LISTO, 'Listo para Recogida (Esperando Repartidor)'), 
+        (EN_CAMINO, 'En Camino'),
+        (ENTREGADO, 'Entregado'),
+        (CANCELADO, 'Cancelado'),
     ]
 
     SIN_INSUMOS = 'SIN_INSUMOS'
@@ -54,7 +71,7 @@ class Pedido(models.Model):
     # Campos de relación y estado
     cliente = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='pedidos_cliente')
     fecha = models.DateTimeField(auto_now_add=True)
-    estado = models.CharField(max_length=20, choices=ESTADOS_CHOICES, default=PENDIENTE)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default=PENDIENTE)
     motivo_cancelacion = models.CharField(max_length=50, choices=MOTIVOS_CHOICES, blank=True, null=True)
 
     repartidor = models.ForeignKey(
