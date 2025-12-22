@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 import sys
+import dj_database_url
 """
 Django settings for core project.
 
@@ -87,6 +88,10 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+database_url = os.environ.get("DATABASE_URL")
+if database_url:
+    DATABASES['default'] = dj_database_url.config(default=database_url, conn_max_age=600)
 
 # Modelo de usuarios personalizados
 AUTH_USER_MODEL = 'usuarios.Usuario'
