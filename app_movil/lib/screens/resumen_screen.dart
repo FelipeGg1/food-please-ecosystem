@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../utils/carrito.dart';
 import '../services/auth_service.dart'; // Importante para obtener el token
+import '../services/api_config.dart'; //Archivo de configuracion api
 
 class ResumenPedidoScreen extends StatefulWidget {
   const ResumenPedidoScreen({super.key});
@@ -30,7 +31,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       return;
     }
 
-    final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/');
+    final url = Uri.parse(ApiConfig.pedidos);
     
     List<int> idsPlatos = Carrito.productos.map((e) => e['id'] as int).toList();
     

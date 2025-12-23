@@ -6,6 +6,7 @@ import '../widgets/app_drawer.dart';
 import '../services/auth_service.dart';
 import 'platos_screen.dart';
 import 'resumen_screen.dart';
+import '../services/api_config.dart'; 
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -36,7 +37,8 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Future<void> fetchMenus() async {
-    final url = Uri.parse('http://10.0.2.2:8000/api/menus/');
+    // final url = Uri.parse('http://10.0.2.2:8000/api/menus/');
+    final url = Uri.parse(ApiConfig.menus);
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {

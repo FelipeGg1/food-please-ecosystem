@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
 import '../widgets/app_drawer.dart';
+import '../services/api_config.dart'; 
 
 class PedidosDisponiblesScreen extends StatefulWidget {
   const PedidosDisponiblesScreen({super.key});
@@ -23,8 +24,9 @@ class _PedidosDisponiblesScreenState extends State<PedidosDisponiblesScreen> {
 
   Future<List<dynamic>> fetchPedidosDisponibles() async {
     final token = await AuthService().getToken();
-    final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/disponibles/');
-
+    // final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/disponibles/');
+    final url = Uri.parse(ApiConfig.disponibles);
+    
     final response = await http.get(url, headers: {
       'Authorization': 'Token $token',
       'Content-Type': 'application/json',
@@ -41,7 +43,8 @@ class _PedidosDisponiblesScreenState extends State<PedidosDisponiblesScreen> {
   Future<void> tomarPedido(int idPedido) async {
     final token = await AuthService().getToken();
     // Llamamos al nuevo endpoint que creamos en Django
-    final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/$idPedido/tomar/'); 
+    // final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/$idPedido/tomar/'); 
+    final url = Uri.parse(ApiConfig.tomarPedido(idPedido));
 
     try {
       final response = await http.post(

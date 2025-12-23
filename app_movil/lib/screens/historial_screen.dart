@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
+import '../services/api_config.dart'; 
 
 class HistorialPedidosScreen extends StatefulWidget {
   const HistorialPedidosScreen({super.key});
@@ -21,7 +22,8 @@ class _HistorialPedidosScreenState extends State<HistorialPedidosScreen> {
   }
 
   Future<void> fetchPedidos() async {
-    final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/');
+    // final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/');
+    final url = Uri.parse(ApiConfig.pedidos);
     final authService = AuthService();
     final token = await authService.getToken();
     

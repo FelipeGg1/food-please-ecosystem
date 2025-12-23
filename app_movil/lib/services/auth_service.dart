@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_config.dart'; 
 
 class AuthService {
-  final String baseUrl = 'http://10.0.2.2:8000';
-
+  // final String baseUrl = 'http://10.0.2.2:8000';
+  final url = Uri.parse(ApiConfig.loginAuth);
   Future<Map<String, dynamic>?> login(String email, String password) async {
 
-    final url = Uri.parse('$baseUrl/usuarios/api-token-auth/');
+    // final url = Uri.parse('$baseUrl/usuarios/api-token-auth/');
     
     try {
       final response = await http.post(

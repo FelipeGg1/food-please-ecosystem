@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
 import '../widgets/app_drawer.dart';
+import '../services/api_config.dart'; 
 
 class RepartidorHomeScreen extends StatefulWidget {
   const RepartidorHomeScreen({super.key});
@@ -24,7 +25,8 @@ class _RepartidorHomeScreenState extends State<RepartidorHomeScreen> {
   // 1. Obtener los pedidos que estoy llevando (EN_CAMINO)
   Future<void> fetchMisEntregas() async {
     final token = await AuthService().getToken();
-    final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/mis_entregas/');
+    // final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/mis_entregas/');
+    final url = Uri.parse(ApiConfig.misEntregas);
 
     try {
       final response = await http.get(url, headers: {
@@ -50,8 +52,9 @@ class _RepartidorHomeScreenState extends State<RepartidorHomeScreen> {
   // 2. Acción para marcar como FINALIZADO
   Future<void> finalizarEntrega(int idPedido) async {
     final token = await AuthService().getToken();
-    final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/$idPedido/finalizar_entrega/');
-
+    // final url = Uri.parse('http://10.0.2.2:8000/api/pedidos/$idPedido/finalizar_entrega/');
+    final url = Uri.parse(ApiConfig.finalizarEntrega(idPedido));
+    
     try {
       final response = await http.post(url, headers: {
         'Authorization': 'Token $token',
