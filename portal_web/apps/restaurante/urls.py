@@ -9,13 +9,14 @@ router.register(r'api/platos', views.PlatoViewSet, basename='api-platos')
 router.register(r'api/pedidos', views.PedidoViewSet, basename='api-pedidos')
 
 urlpatterns = [
-    # --- RUTAS DE LA API (Agregadas para que funcione Flutter) ---
-    path('', include(router.urls)),
 
     # --- RUTAS WEB (Las que tú definiste para el Restaurante) ---
     # Home y Lista de Menús
     path('menus/', views.lista_menus, name='lista_menus'),
     path('', views.home, name='home'),
+
+    # --- RUTAS DE LA API (Agregadas para que funcione Flutter) ---
+    path('', include(router.urls)),
     
     # Gestión de Menús y Platos (CRUD)
     path('menu/nuevo/', views.crear_menu, name='crear_menu'),

@@ -17,6 +17,7 @@ from django.db.models.functions import Coalesce
 # ==========================================
 
 # 1. Listar todos los menús (Inicio)
+@login_required
 def lista_menus(request):
     menus = Menu.objects.annotate(
         total_platos=Count('platos'), 
@@ -28,6 +29,7 @@ def lista_menus(request):
     })
 
 # 2. Crear un Menú nuevo
+@login_required
 def crear_menu(request):
     if request.method == 'POST':
         form = MenuForm(request.POST)
@@ -43,6 +45,7 @@ def crear_menu(request):
     })
 
 # 3. Eliminar menú
+@login_required
 def eliminar_menu(request, id):
     menu = get_object_or_404(Menu, id=id)
 
@@ -60,6 +63,7 @@ def detalle_menu(request, id):
     return render(request, 'restaurante/detalle_menu.html', {'menu': menu, 'platos': platos})
 
 # 5. Agregar plato a un menú específico
+@login_required
 def agregar_plato(request, menu_id):
     menu_padre = get_object_or_404(Menu, id=menu_id)
     
@@ -80,6 +84,7 @@ def agregar_plato(request, menu_id):
 
 
 # 6. Vista para eliminar un Plato
+@login_required
 def eliminar_plato(request, id):
     plato = get_object_or_404(Plato, id=id)
     menu_id = plato.menu.id 
@@ -91,6 +96,7 @@ def eliminar_plato(request, id):
     return render(request, 'restaurante/confirmar_borrado.html', {'item': plato.nombre})
 
 # 7. Editar un Menú
+@login_required
 def editar_menu(request, id):
     menu = get_object_or_404(Menu, id=id)
     
@@ -108,6 +114,7 @@ def editar_menu(request, id):
     })
 
 # 8. Editar un Plato
+@login_required
 def editar_plato(request, id):
     plato = get_object_or_404(Plato, id=id)
     menu_id = plato.menu.id 

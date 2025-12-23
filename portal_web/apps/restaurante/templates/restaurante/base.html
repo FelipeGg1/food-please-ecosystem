@@ -45,7 +45,13 @@
         <span class="navbar-brand mb-0 h1">FoodPlease Admin</span>
         <span class="text-white">
             {% if request.user.is_authenticated %}
-                Hola, {{ request.user.username }} | <a href="{% url 'logout' %}" class="text-white-50" style="display:inline;">Salir</a>
+                Hola, {{ request.user.username }} | 
+                <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-link btn btn-link text-white-50 p-0 border-0 bg-transparent" style="display:inline; text-decoration: none;">
+                        Salir
+                    </button>
+                </form>
             {% else %}
                 <a href="{% url 'login' %}" class="text-white">Iniciar Sesión</a>
             {% endif %}

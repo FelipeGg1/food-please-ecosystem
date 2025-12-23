@@ -27,7 +27,7 @@ sys.path.append(os.path.join(BASE_DIR, 'apps')) # Para no usar en INSTALLED_APPS
 SECRET_KEY = 'django-insecure-!$1lu5zmnj30h*416eak-srpg)sb3xpctdoa2o*4lxwa7_lyfo'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('RAILWAY_ENVIRONMENT') is None
 
 ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = ["https://*.railway.app"]
@@ -148,9 +148,8 @@ REST_FRAMEWORK = {
     ]
 }
 
-
+LOGIN_URL = 'login'
 # A dónde ir después de iniciar sesión correctamente
-LOGIN_REDIRECT_URL = '/'  # Lo mandamos al inicio (home)
-
+LOGIN_REDIRECT_URL = '/' 
 # A dónde ir después de cerrar sesión
 LOGOUT_REDIRECT_URL = '/usuarios/login/'
