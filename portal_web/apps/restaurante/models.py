@@ -15,12 +15,11 @@ class Plato(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True, help_text="Ingredientes o detalles")
     precio = models.IntegerField()
-    available = models.BooleanField(default=True) # Agregué esto por si lo usas en el form
+    available = models.BooleanField(default=True)
     
     def __str__(self):
         return f"{self.nombre} - ${self.precio}"
 def cantidad_platos(self):
-        # Usamos 'platos' porque el diagnóstico confirmó que ese es el nombre
         return self.platos.count()
 
 def costo_total(self):
@@ -28,14 +27,13 @@ def costo_total(self):
     # El 'or 0' es para que si no hay platos, devuelva 0 en vez de error
     return sum(plato.precio for plato in self.platos.all()) or 0
 
-# Esto es opcional, pero ayuda a que se vea bien en el Admin de Django
+
 cantidad_platos.short_description = "N° Platos"
 costo_total.short_description = "Costo Total"
 
 
 # 3. El Pedido (COMPLETO)
 class Pedido(models.Model):
-    # --- TUS CAMPOS ORIGINALES ---
     platos = models.ManyToManyField(Plato)
     total = models.IntegerField(default=0)
     

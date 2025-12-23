@@ -36,7 +36,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("Usuario 'repartidor' (rol=REPARTIDOR) creado."))
 
         # --- 2. Crear Menú ---
-        # CORRECCIÓN: Quitamos 'descripcion' porque tu modelo Menu no lo tiene.
         menu_nombre = "Menú Ejecutivo"
         menu, created = Menu.objects.get_or_create(
             nombre=menu_nombre,
@@ -46,7 +45,7 @@ class Command(BaseCommand):
         )
         
         if created:
-            self.stdout.write(self.style.SUCCESS(f"🍱 Menú '{menu_nombre}' creado."))
+            self.stdout.write(self.style.SUCCESS(f"Menú '{menu_nombre}' creado."))
         else:
             self.stdout.write(f"El menú '{menu_nombre}' ya existe.")
 
@@ -58,14 +57,13 @@ class Command(BaseCommand):
         ]
 
         for data in platos_data:
-            # CORRECCIÓN: Usamos 'available' en vez de 'disponible' según tu modelo.
             Plato.objects.get_or_create(
                 nombre=data['nombre'],
                 menu=menu,
                 defaults={
                     'descripcion': data['desc'],
                     'precio': data['precio'],
-                    'available': True  # <--- Aquí estaba la otra diferencia
+                    'available': True  
                 }
             )
         
